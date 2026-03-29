@@ -674,6 +674,7 @@ function EstimatorTab({allCards, maxSingle}) {
   const [inputs,   setInputs]   = useState(()=>Object.fromEntries(RADAR_KEYS.map(k=>[k,""])));
   const [kCount,   setKCount]   = useState(30);
   const [results,  setResults]  = useState(null);
+  const [tableSort, setTableSort] = useState("dist"); // "dist" | "level_desc" | "level_asc"
 
   const filledKeys = useMemo(()=>RADAR_KEYS.filter(k=>inputs[k].trim()!==""),[inputs]);
 
@@ -689,7 +690,10 @@ function EstimatorTab({allCards, maxSingle}) {
       return {...card,dist:Math.sqrt(sumSq/filledKeys.length)};
     });
     withDist.sort((a,b)=>a.dist-b.dist);
-    const topK=withDist.slice(0,kCount);
+    const hardSlice = withDist.slice(0, kCount);
+    const cutoffDist = hardSlice.length ? hardSlice[hardSlice.length-1].dist : 0;
+    // Include all charts tied with the last chart in the hard slice
+    const topK = withDist.filter(c => c.dist <= cutoffDist + 1e-9);
     const levels=topK.map(c=>parseFloat(c.diff.level));
     const levelDist={};
     levels.forEach(l=>{const key=String(l);levelDist[key]=(levelDist[key]||0)+1;});
@@ -860,14 +864,30 @@ function EstimatorTab({allCards, maxSingle}) {
                 <table style={{width:"100%",borderCollapse:"collapse",minWidth:600}}>
                   <thead>
                     <tr>
-                      {["#","TITLE","ARTIST","DIFF","LVL",...RADAR_KEYS.map(k=>k.slice(0,4).toUpperCase()),"DIST"].map(h=>(
-                        <th key={h} style={{fontSize:7.5,color:"#666",letterSpacing:1.5,fontWeight:700,
-                          textAlign:"left",paddingBottom:6,borderBottom:"1px solid #252525",paddingRight:10}}>{h}</th>
-                      ))}
+                      {["#","TITLE","ARTIST","DIFF","LVL",...RADAR_KEYS.map(k=>k.slice(0,4).toUpperCase()),"DIST"].map(h=>{
+                        const isLvl = h==="LVL", isDist = h==="DIST";
+                        const sortable = isLvl || isDist;
+                        const active = (isLvl && tableSort!=="dist") || (isDist && tableSort==="dist");
+                        return (
+                          <th key={h} onClick={sortable?()=>{
+                            if(isLvl) setTableSort(s=>s==="level_desc"?"level_asc":"level_desc");
+                            if(isDist) setTableSort("dist");
+                          }:undefined} style={{fontSize:7.5,letterSpacing:1.5,fontWeight:700,
+                            textAlign:"left",paddingBottom:6,borderBottom:"1px solid #252525",paddingRight:10,
+                            color: active?"#00d5ca":"#666",
+                            cursor:sortable?"pointer":"default",userSelect:"none"}}>
+                            {h}{isLvl&&tableSort!=="dist"?(tableSort==="level_desc"?" ▼":" ▲"):""}{isDist&&tableSort==="dist"?" ▼":""}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
-                    {results.topK.map(({song,diff,dist},i)=>{
+                    {[...results.topK].sort((a,b)=>{
+                      if(tableSort==="level_desc") return parseFloat(b.diff.level)-parseFloat(a.diff.level);
+                      if(tableSort==="level_asc")  return parseFloat(a.diff.level)-parseFloat(b.diff.level);
+                      return a.dist-b.dist;
+                    }).map(({song,diff,dist},i)=>{
                       const t=diff.type.toLowerCase(), dc=DIFF_COLORS[t]||"#555";
                       return (
                         <tr key={`${song.songid}-${diff.type}-${i}`} style={{background:i%2===0?"transparent":"#0a0a0a"}}>
