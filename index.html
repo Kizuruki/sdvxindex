@@ -52,7 +52,6 @@ const DIFF_ABBR = {
   infinite:"INF", gravity:"GRV", heavenly:"HVN",
   vivid:"VVD", exceed:"XCD", ultimate:"ULT",
 };
-// URL path segment for sdvxindex.com/s/(id)/(num)
 const DIFF_URL_NUM = {
   novice:"1", advanced:"2", exhaust:"3", maximum:"5",
   infinite:"4i", gravity:"4g", heavenly:"4h",
@@ -61,7 +60,6 @@ const DIFF_URL_NUM = {
 const ALL_DIFF_TYPES = Object.keys(DIFF_COLORS);
 const ALL_SORT_CATS  = [...RADAR_KEYS, "total", "chain", "exscore"];
 const PAGE_SIZE = 100;
-// Levels that get a separate XX.0 (exact) filter alongside the XX (full-range) filter
 const DECIMAL_LEVEL_RANGE = [17, 18, 19, 20];
 
 // ─── Math ─────────────────────────────────────────────────────────────────────
@@ -78,30 +76,24 @@ function radarTotal(r) { return RADAR_KEYS.reduce((s,k)=>s+(Number(r?.[k])||0),0
 function levelMatches(level, fv) {
   const l = Number(level);
   if (fv.includes(".")) {
-    // exact match e.g. "19.0" only matches charts at exactly 19.0
     return Math.round(l * 10) === Math.round(parseFloat(fv) * 10);
   }
-  // range match e.g. "19" matches 19.0–19.9
   return Math.floor(l) === parseInt(fv, 10);
 }
 
-// Build level list. For integer levels in DECIMAL_LEVEL_RANGE (17-20) emit both:
-//   "20"   → floor match (20.0–20.9)
-//   "20.0" → exact match (exactly 20.0), displayed italic
 function buildAllLevels(songs) {
   const s = new Set();
   songs.forEach(sg => sg.difficulties?.forEach(d => {
     const lvl = parseFloat(d.level);
     s.add(String(d.level));
     if (DECIMAL_LEVEL_RANGE.includes(Math.floor(lvl)) && lvl === Math.floor(lvl)) {
-      s.add(lvl.toFixed(1));          // "19.0"
-      s.add(String(Math.floor(lvl))); // "19"
+      s.add(lvl.toFixed(1));
+      s.add(String(Math.floor(lvl)));
     }
   }));
   return [...s].sort((a, b) => {
     const af = parseFloat(a), bf = parseFloat(b);
     if (Math.abs(bf - af) > 0.001) return bf - af;
-    // same numeric value: ".0" (exact) sorts before bare integer (range)
     return a.includes(".") ? -1 : 1;
   });
 }
@@ -132,7 +124,6 @@ function sortColor(cat) {
   return RADAR_COLORS[cat] || "#ffffff";
 }
 
-// Standard competition ranking: ties share a rank, next rank skips (1,1,3,3,5…)
 function computeRanks(cards, sortCat) {
   if (!cards.length) return [];
   const ranks = new Array(cards.length);
@@ -148,8 +139,8 @@ function computeRanks(cards, sortCat) {
 // ─── Shared Components ────────────────────────────────────────────────────────
 
 function SectionLabel({children}) {
-  return <div style={{fontSize:8.5,letterSpacing:3,color:"#4c4c4c",fontWeight:700,
-    textTransform:"uppercase",marginBottom:8,paddingBottom:5,borderBottom:"1px solid #1e1e1e"}}>{children}</div>;
+  return <div style={{fontSize:8.5,letterSpacing:3,color:"#787878",fontWeight:700,
+    textTransform:"uppercase",marginBottom:8,paddingBottom:5,borderBottom:"1px solid #2e2e2e"}}>{children}</div>;
 }
 
 function Chip({label, active, color="#555", onClick}) {
@@ -157,8 +148,8 @@ function Chip({label, active, color="#555", onClick}) {
     <button onClick={onClick} style={{
       padding:"4px 10px", fontSize:10.5,
       background: active ? color+"1e" : "transparent",
-      border:`1px solid ${active ? color+"66" : "#222"}`,
-      color: active ? color : "#484848",
+      border:`1px solid ${active ? color+"66" : "#333"}`,
+      color: active ? color : "#767676",
       borderRadius:3, cursor:"pointer", fontFamily:"inherit",
       letterSpacing:0.5, textAlign:"left", transition:"all 0.1s",
       whiteSpace:"nowrap", boxShadow: active ? `0 0 8px ${color}18` : "none",
@@ -178,8 +169,8 @@ function LevelGrid({allLevels, levelFilters, setLevelFilters}) {
             <button key={lvl} onClick={()=>setLevelFilters(f=>toggle(f,lvl))} style={{
               padding:"3px 5px", fontSize:10,
               background: active ? (isExact ? "#00d5ca18" : "#ffffff12") : "transparent",
-              border:`1px solid ${active ? (isExact ? "#00d5ca55" : "#4a4a4a") : "#1e1e1e"}`,
-              color: active ? (isExact ? "#00d5ca" : "#ccc") : "#484848",
+              border:`1px solid ${active ? (isExact ? "#00d5ca55" : "#4a4a4a") : "#2e2e2e"}`,
+              color: active ? (isExact ? "#00d5ca" : "#ccc") : "#767676",
               borderRadius:3, cursor:"pointer", fontFamily:"inherit",
               fontVariantNumeric:"tabular-nums", transition:"all 0.1s",
               fontStyle: isExact ? "italic" : "normal",
@@ -187,8 +178,8 @@ function LevelGrid({allLevels, levelFilters, setLevelFilters}) {
           );
         })}
       </div>
-      <div style={{fontSize:7.5,color:"#333",marginTop:5,lineHeight:1.8}}>
-        <span style={{fontStyle:"italic",color:"#3c3c3c"}}>XX.0</span> = exact rating
+      <div style={{fontSize:7.5,color:"#666",marginTop:5,lineHeight:1.8}}>
+        <span style={{fontStyle:"italic",color:"#777"}}>XX.0</span> = exact rating
         &ensp;&middot;&ensp;
         <span>XX</span> = full range
       </div>
@@ -197,13 +188,13 @@ function LevelGrid({allLevels, levelFilters, setLevelFilters}) {
 }
 
 function Sidebar({children}) {
-  return <aside style={{width:210,flexShrink:0,background:"#090909",borderRight:"1px solid #181818",
+  return <aside style={{width:210,flexShrink:0,background:"#090909",borderRight:"1px solid #252525",
     overflowY:"auto",padding:"14px 10px",display:"flex",flexDirection:"column",gap:16}}>{children}</aside>;
 }
 
 function ResetBtn({onClick}) {
   return <button onClick={onClick} style={{padding:"7px",background:"transparent",
-    border:"1px solid #242424",color:"#484848",borderRadius:3,cursor:"pointer",
+    border:"1px solid #3a3a3a",color:"#767676",borderRadius:3,cursor:"pointer",
     fontFamily:"inherit",fontSize:9.5,letterSpacing:1.5,transition:"all 0.1s"}}>RESET FILTERS</button>;
 }
 
@@ -214,21 +205,22 @@ function RadarBar({label, value, maxVal, color, highlight, glow}) {
   return (
     <div style={{display:"flex",alignItems:"center",gap:7}}>
       <div style={{width:58,fontSize:8.5,fontWeight:highlight?700:400,
-        color:highlight?color:"#404040",letterSpacing:1,flexShrink:0,textTransform:"uppercase"}}>{label}</div>
+        color:highlight?color:"#686868",letterSpacing:1,flexShrink:0,textTransform:"uppercase"}}>{label}</div>
       <div style={{flex:1,height:5,background:"#0d0d0d",borderRadius:3,overflow:"hidden",position:"relative"}}>
         <div style={{position:"absolute",left:0,top:0,height:"100%",width:`${pct}%`,
-          background:highlight?color:"#282828",borderRadius:3,
+          background:highlight?color:"#383838",borderRadius:3,
           boxShadow:(highlight&&glow)?`0 0 6px ${color}66`:"none",transition:"width 0.25s ease"}}/>
       </div>
       <div style={{width:34,fontSize:10.5,textAlign:"right",fontWeight:highlight?700:400,
-        color:highlight?color:"#3e3e3e",flexShrink:0,fontVariantNumeric:"tabular-nums"}}>{value}</div>
+        color:highlight?color:"#686868",flexShrink:0,fontVariantNumeric:"tabular-nums"}}>{value}</div>
     </div>
   );
 }
 
 // ─── Spider Chart ─────────────────────────────────────────────────────────────
+// compareColor controls the color of the optional second polygon (default white)
 
-function SpiderChart({data, maxVal=300, size=190, compareData=null}) {
+function SpiderChart({data, maxVal=300, size=190, compareData=null, compareColor="#ffffff"}) {
   const cx=size/2, cy=size/2, r=size*0.34;
   const step=(2*Math.PI)/RADAR_KEYS.length, start=-Math.PI/2;
   const pt=(i,ratio)=>({x:cx+r*ratio*Math.cos(start+i*step),y:cy+r*ratio*Math.sin(start+i*step)});
@@ -240,10 +232,10 @@ function SpiderChart({data, maxVal=300, size=190, compareData=null}) {
     <svg width={size} height={size} style={{overflow:"visible"}}>
       {[0.25,0.5,0.75,1].map((lvl,li)=>(
         <polygon key={li} points={toPath(RADAR_KEYS.map((_,i)=>pt(i,lvl)))}
-          fill="none" stroke={li===3?"#282828":"#191919"} strokeWidth={li===3?1.5:1}/>
+          fill="none" stroke={li===3?"#363636":"#1e1e1e"} strokeWidth={li===3?1.5:1}/>
       ))}
-      {RADAR_KEYS.map((_,i)=>{const p=pt(i,1); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#191919" strokeWidth="1"/>;})}
-      {cmpPts&&<polygon points={toPath(cmpPts)} fill="#ffffff07" stroke="#ffffff2a" strokeWidth="1.5"/>}
+      {RADAR_KEYS.map((_,i)=>{const p=pt(i,1); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#1e1e1e" strokeWidth="1"/>;})}
+      {cmpPts&&<polygon points={toPath(cmpPts)} fill={compareColor+"1a"} stroke={compareColor+"cc"} strokeWidth="2"/>}
       <polygon points={toPath(dataPts)} fill="#00d5ca12" stroke="#00d5ca77" strokeWidth="1.5"/>
       {dataPts.map((p,i)=>(
         <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={RADAR_COLORS[RADAR_KEYS[i]]}
@@ -263,8 +255,14 @@ function SpiderChart({data, maxVal=300, size=190, compareData=null}) {
 
 // ─── Chart Card ───────────────────────────────────────────────────────────────
 
-function ChartCard({song, diff, total, sortCat, maxSingle, rank}) {
+function ChartCard({song, diff, total, sortCat, maxSingle, rank, globalShowSpider}) {
   const [hov, setHov] = useState(false);
+  // localFlipped XOR globalShowSpider → clicking always flips from the global default.
+  // When global changes, localFlipped resets so every card snaps back to the global setting.
+  const [localFlipped, setLocalFlipped] = useState(false);
+  useEffect(()=>{ setLocalFlipped(false); }, [globalShowSpider]);
+  const showSpider = globalShowSpider ? !localFlipped : localFlipped;
+
   const t    = diff.type.toLowerCase();
   const dc   = DIFF_COLORS[t]   || "#555";
   const abbr = DIFF_ABBR[t]     || t.toUpperCase();
@@ -274,24 +272,31 @@ function ChartCard({song, diff, total, sortCat, maxSingle, rank}) {
   return (
     <div className="fadeUp"
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      onClick={()=>setLocalFlipped(f=>!f)}
       style={{
         background:"#0d0d0d",
-        border:`1px solid ${hov?dc+"33":"#1c1c1c"}`,
-        borderTop:`2px solid ${hov?dc:dc+"88"}`,
+        border:`1px solid ${hov?dc+"44":"#282828"}`,
+        borderTop:`2px solid ${hov?dc:dc+"99"}`,
         borderRadius:6, padding:"10px 12px",
         position:"relative", display:"flex", flexDirection:"column", gap:7,
         transition:"all 0.13s", transform:hov?"translateY(-1px)":"none",
         boxShadow:hov?`0 6px 20px rgba(0,0,0,0.5),0 0 14px ${dc}0e`:"0 2px 8px rgba(0,0,0,0.3)",
+        cursor:"pointer",
       }}>
 
-      {/* rank badge */}
-      <span style={{position:"absolute",top:7,right:9,fontSize:8.5,color:"#383838",fontWeight:700,letterSpacing:1}}>#{rank}</span>
+      {/* rank badge — larger and more visible */}
+      <span style={{
+        position:"absolute", top:6, right:9,
+        fontSize:15, color:"#707070", fontWeight:800,
+        letterSpacing:0, fontVariantNumeric:"tabular-nums",
+        lineHeight:1,
+      }}>#{rank}</span>
 
       {/* title / artist */}
-      <div style={{paddingRight:28}}>
+      <div style={{paddingRight:42}}>
         <div style={{fontSize:12,fontWeight:700,color:hov?"#e8e8e8":"#d2d2d2",lineHeight:1.3,
           overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",transition:"color 0.13s"}}>{song.title}</div>
-        <div style={{fontSize:9.5,color:"#585858",marginTop:2}}>{song.artist}</div>
+        <div style={{fontSize:9.5,color:"#888",marginTop:2}}>{song.artist}</div>
       </div>
 
       {/* diff badge + level + bpm */}
@@ -299,27 +304,33 @@ function ChartCard({song, diff, total, sortCat, maxSingle, rank}) {
         <span style={{fontSize:9,fontWeight:700,color:dc,background:dc+"18",
           padding:"2px 7px",borderRadius:3,letterSpacing:1.5,border:`1px solid ${dc}2a`}}>{abbr}</span>
         <span style={{fontSize:15,fontWeight:800,color:"#e8e8e8",letterSpacing:-0.5}}>{diff.level}</span>
-        <span style={{marginLeft:"auto",fontSize:9.5,color:"#484848",letterSpacing:0.5}}>{song.bpm} BPM</span>
+        <span style={{marginLeft:"auto",fontSize:9.5,color:"#767676",letterSpacing:0.5}}>{song.bpm} BPM</span>
       </div>
 
-      {/* radar bars */}
-      <div style={{display:"flex",flexDirection:"column",gap:3}}>
-        {RADAR_KEYS.map(k=>(
-          <RadarBar key={k} label={k} value={Number(diff.radar?.[k])||0}
-            maxVal={maxSingle} color={RADAR_COLORS[k]} highlight={sortCat===k} glow={hov}/>
-        ))}
-        <div style={{marginTop:3,paddingTop:4,borderTop:"1px solid #181818"}}>
-          <RadarBar label="total" value={total} maxVal={maxSingle*6}
-            color="#ffffff" highlight={sortCat==="total"} glow={hov}/>
+      {/* radar bars OR spider chart — click anywhere on card to toggle */}
+      {showSpider ? (
+        <div style={{display:"flex",justifyContent:"center",padding:"6px 0 2px"}}>
+          <SpiderChart data={diff.radar||{}} maxVal={maxSingle} size={158}/>
         </div>
-      </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+          {RADAR_KEYS.map(k=>(
+            <RadarBar key={k} label={k} value={Number(diff.radar?.[k])||0}
+              maxVal={maxSingle} color={RADAR_COLORS[k]} highlight={sortCat===k} glow={hov}/>
+          ))}
+          <div style={{marginTop:3,paddingTop:4,borderTop:"1px solid #222"}}>
+            <RadarBar label="total" value={total} maxVal={maxSingle*6}
+              color="#ffffff" highlight={sortCat==="total"} glow={hov}/>
+          </div>
+        </div>
+      )}
 
       {/* chain / exscore / index link */}
-      <div style={{display:"flex",gap:10,fontSize:9.5,paddingTop:5,borderTop:"1px solid #161616",alignItems:"center"}}>
-        <span style={{color:sortCat==="chain"?"#00d5ca":"#4a4a4a",fontWeight:sortCat==="chain"?700:400,letterSpacing:0.5}}>
+      <div style={{display:"flex",gap:10,fontSize:9.5,paddingTop:5,borderTop:"1px solid #222",alignItems:"center"}}>
+        <span style={{color:sortCat==="chain"?"#00d5ca":"#767676",fontWeight:sortCat==="chain"?700:400,letterSpacing:0.5}}>
           ⛓ {(diff.max_chain||0).toLocaleString()}
         </span>
-        <span style={{color:sortCat==="exscore"?"#f9ff00":"#4a4a4a",fontWeight:sortCat==="exscore"?700:400,letterSpacing:0.5}}>
+        <span style={{color:sortCat==="exscore"?"#f9ff00":"#767676",fontWeight:sortCat==="exscore"?700:400,letterSpacing:0.5}}>
           EX {(diff.max_exscore||0).toLocaleString()}
         </span>
         {sdvxUrl && (
@@ -328,8 +339,8 @@ function ChartCard({song, diff, total, sortCat, maxSingle, rank}) {
             style={{
               marginLeft:"auto", fontSize:8, letterSpacing:1.2, fontWeight:700,
               padding:"2px 7px", borderRadius:2, textDecoration:"none",
-              border:`1px solid ${hov?"#00d5ca44":"#242424"}`,
-              color: hov ? "#00d5ca" : "#3c3c3c",
+              border:`1px solid ${hov?"#00d5ca44":"#3a3a3a"}`,
+              color: hov ? "#00d5ca" : "#686868",
               transition:"all 0.12s",
             }}>INDEX ↗</a>
         )}
@@ -341,13 +352,14 @@ function ChartCard({song, diff, total, sortCat, maxSingle, rank}) {
 // ─── Explorer Tab ─────────────────────────────────────────────────────────────
 
 function ExplorerTab({songs, allCards, maxSingle}) {
-  const [search,       setSearch]       = useState("");
-  const [levelFilters, setLevelFilters] = useState([]);
-  const [diffFilters,  setDiffFilters]  = useState([]);
-  const [radarFilters, setRadarFilters] = useState([]);
-  const [sortCat,      setSortCat]      = useState("total");
-  const [sortDir,      setSortDir]      = useState("high-low");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [search,           setSearch]           = useState("");
+  const [levelFilters,     setLevelFilters]     = useState([]);
+  const [diffFilters,      setDiffFilters]      = useState([]);
+  const [radarFilters,     setRadarFilters]     = useState([]);
+  const [sortCat,          setSortCat]          = useState("total");
+  const [sortDir,          setSortDir]          = useState("high-low");
+  const [visibleCount,     setVisibleCount]     = useState(PAGE_SIZE);
+  const [globalShowSpider, setGlobalShowSpider] = useState(false);
 
   const mainRef     = useRef(null);
   const sentinelRef = useRef(null);
@@ -373,16 +385,13 @@ function ExplorerTab({songs, allCards, maxSingle}) {
     );
   },[allCards,search,levelFilters,diffFilters,radarFilters,sortCat,sortDir]);
 
-  // Tied ranking: 1,1,3,3,5…
   const ranks = useMemo(()=>computeRanks(filtered, sortCat),[filtered,sortCat]);
 
-  // Reset page + scroll whenever filtered set changes
   useEffect(()=>{
     setVisibleCount(PAGE_SIZE);
     if(mainRef.current) mainRef.current.scrollTop = 0;
   },[filtered]);
 
-  // IntersectionObserver: load next page when sentinel enters viewport
   useEffect(()=>{
     const sentinel = sentinelRef.current;
     if(!sentinel) return;
@@ -404,7 +413,7 @@ function ExplorerTab({songs, allCards, maxSingle}) {
           <SectionLabel>SEARCH</SectionLabel>
           <input type="text" placeholder="title / artist…" value={search}
             onChange={e=>setSearch(e.target.value)}
-            style={{width:"100%",padding:"6px 8px",background:"#0f0f0f",border:"1px solid #242424",
+            style={{width:"100%",padding:"6px 8px",background:"#0f0f0f",border:"1px solid #333",
               borderRadius:3,color:"#bbb",fontFamily:"inherit",fontSize:11,outline:"none"}}/>
         </div>
 
@@ -415,8 +424,8 @@ function ExplorerTab({songs, allCards, maxSingle}) {
               const c=sortColor(cat), active=sortCat===cat;
               return <button key={cat} onClick={()=>setSortCat(cat)} style={{
                 padding:"5px 8px",background:active?c+"12":"transparent",
-                border:`1px solid ${active?c+"55":"#1e1e1e"}`,
-                borderRadius:3,color:active?c:"#3e3e3e",cursor:"pointer",fontFamily:"inherit",
+                border:`1px solid ${active?c+"55":"#2a2a2a"}`,
+                borderRadius:3,color:active?c:"#686868",cursor:"pointer",fontFamily:"inherit",
                 fontSize:10,textAlign:"left",letterSpacing:1.5,textTransform:"uppercase",
                 fontWeight:active?700:400,transition:"all 0.1s",boxShadow:active?`0 0 8px ${c}18`:"none",
               }}>{cat==="chain"?"⛓ CHAIN":cat==="exscore"?"EX SCORE":cat}</button>;
@@ -427,8 +436,8 @@ function ExplorerTab({songs, allCards, maxSingle}) {
               <button key={val} onClick={()=>setSortDir(val)} style={{
                 flex:1,padding:"4px 2px",fontSize:8.5,letterSpacing:0.3,
                 background:sortDir===val?"#00d5ca0f":"transparent",
-                border:`1px solid ${sortDir===val?"#00d5ca44":"#1e1e1e"}`,
-                color:sortDir===val?"#00d5ca":"#3e3e3e",
+                border:`1px solid ${sortDir===val?"#00d5ca44":"#2a2a2a"}`,
+                color:sortDir===val?"#00d5ca":"#686868",
                 borderRadius:3,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",
               }}>{lbl}</button>
             ))}
@@ -444,7 +453,7 @@ function ExplorerTab({songs, allCards, maxSingle}) {
             ))}
           </div>
           {radarFilters.length>0&&(
-            <div style={{fontSize:8.5,color:"#3c3c3c",marginTop:6,lineHeight:1.7}}>dominant or &gt;130 on<br/>selected axes</div>
+            <div style={{fontSize:8.5,color:"#5a5a5a",marginTop:6,lineHeight:1.7}}>dominant or &gt;130 on<br/>selected axes</div>
           )}
         </div>
 
@@ -465,26 +474,42 @@ function ExplorerTab({songs, allCards, maxSingle}) {
 
       <main ref={mainRef} style={{flex:1,overflowY:"auto",padding:10}}>
         {filtered.length===0 ? (
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#2e2e2e",fontSize:12,letterSpacing:4}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#505050",fontSize:12,letterSpacing:4}}>
             NO MATCHING CHARTS
           </div>
         ) : (
           <>
-            <div style={{fontSize:8.5,color:"#383838",letterSpacing:2,marginBottom:8,textAlign:"right"}}>
-              {visibleCount < filtered.length
-                ? `${visibleCount.toLocaleString()} / ${filtered.length.toLocaleString()} CHARTS`
-                : `${filtered.length.toLocaleString()} CHARTS`}
+            {/* Top bar: chart count + NUMBERS / SPIDER toggle */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <div style={{fontSize:8.5,color:"#686868",letterSpacing:2}}>
+                {visibleCount < filtered.length
+                  ? `${visibleCount.toLocaleString()} / ${filtered.length.toLocaleString()} CHARTS`
+                  : `${filtered.length.toLocaleString()} CHARTS`}
+              </div>
+              <div style={{display:"flex",gap:3}}>
+                {[{val:false,label:"NUMBERS"},{val:true,label:"SPIDER"}].map(({val,label})=>(
+                  <button key={String(val)} onClick={()=>setGlobalShowSpider(val)} style={{
+                    padding:"3px 10px", fontSize:8.5, letterSpacing:1.5,
+                    background:globalShowSpider===val?"#00d5ca12":"transparent",
+                    border:`1px solid ${globalShowSpider===val?"#00d5ca44":"#2e2e2e"}`,
+                    color:globalShowSpider===val?"#00d5ca":"#686868",
+                    borderRadius:3, cursor:"pointer", fontFamily:"inherit", transition:"all 0.1s",
+                  }}>{label}</button>
+                ))}
+              </div>
             </div>
+
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:8}}>
               {visible.map(({song,diff,total},i)=>(
                 <ChartCard key={`${song.songid}-${diff.type}`}
                   song={song} diff={diff} total={total}
-                  sortCat={sortCat} maxSingle={maxSingle} rank={ranks[i]}/>
+                  sortCat={sortCat} maxSingle={maxSingle} rank={ranks[i]}
+                  globalShowSpider={globalShowSpider}/>
               ))}
             </div>
             {visibleCount < filtered.length && (
               <div ref={sentinelRef} style={{height:48,display:"flex",alignItems:"center",
-                justifyContent:"center",color:"#2c2c2c",fontSize:9,letterSpacing:3,marginTop:8}}>
+                justifyContent:"center",color:"#505050",fontSize:9,letterSpacing:3,marginTop:8}}>
                 LOADING MORE…
               </div>
             )}
@@ -529,7 +554,9 @@ function StatsTab({songs, allCards}) {
   },[selected]);
 
   const spiderData = useMemo(()=>stats?Object.fromEntries(RADAR_KEYS.map(k=>[k,stats[k]?.mean||0])):{},[stats]);
-  const spiderMax  = useMemo(()=>stats?Math.max(...RADAR_KEYS.map(k=>stats[k]?.max||0),100):300,[stats]);
+
+  // Fixed at 200 so spider shapes are directly comparable across different filters
+  const spiderMax = 200;
 
   return (
     <div style={{display:"flex",flex:1,overflow:"hidden"}}>
@@ -552,7 +579,7 @@ function StatsTab({songs, allCards}) {
 
       <main style={{flex:1,overflowY:"auto",padding:18,display:"flex",flexDirection:"column",gap:18}}>
         {!stats ? (
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#2e2e2e",fontSize:12,letterSpacing:4}}>NO DATA</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#505050",fontSize:12,letterSpacing:4}}>NO DATA</div>
         ) : (
           <div className="fadeUp" style={{display:"flex",flexDirection:"column",gap:18}}>
             <div style={{display:"flex",alignItems:"flex-end",gap:20,flexWrap:"wrap"}}>
@@ -560,7 +587,7 @@ function StatsTab({songs, allCards}) {
                 <div style={{fontSize:32,fontWeight:800,color:"#00d5ca",letterSpacing:-1,lineHeight:1,textShadow:"0 0 24px #00d5ca44"}}>
                   {selected.length.toLocaleString()}
                 </div>
-                <div style={{fontSize:8,color:"#3a3a3a",letterSpacing:3,marginTop:3}}>CHARTS</div>
+                <div style={{fontSize:8,color:"#686868",letterSpacing:3,marginTop:3}}>CHARTS</div>
               </div>
               {[
                 {label:"LVL MEAN",   val:fmt(stats._level.mean,2)},
@@ -568,28 +595,28 @@ function StatsTab({songs, allCards}) {
                 {label:"STD DEV",    val:"±"+fmt(stats._level.std,2)},
                 {label:"RANGE",      val:`${fmt(stats._level.min,1)}–${fmt(stats._level.max,1)}`},
               ].map(({label,val})=>(
-                <div key={label} style={{borderLeft:"1px solid #1e1e1e",paddingLeft:18}}>
+                <div key={label} style={{borderLeft:"1px solid #2e2e2e",paddingLeft:18}}>
                   <div style={{fontSize:17,fontWeight:700,color:"#cccccc",letterSpacing:-0.3}}>{val}</div>
-                  <div style={{fontSize:8,color:"#383838",letterSpacing:2,marginTop:2}}>{label}</div>
+                  <div style={{fontSize:8,color:"#686868",letterSpacing:2,marginTop:2}}>{label}</div>
                 </div>
               ))}
             </div>
 
             <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-start"}}>
-              {/* Spider */}
-              <div style={{background:"#0b0b0b",border:"1px solid #1a1a1a",borderRadius:8,padding:"16px 12px",
+              {/* Spider — outer ring is always 200 for cross-filter comparability */}
+              <div style={{background:"#0b0b0b",border:"1px solid #252525",borderRadius:8,padding:"16px 12px",
                 display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                <div style={{fontSize:8,color:"#383838",letterSpacing:3}}>AVERAGE SHAPE</div>
+                <div style={{fontSize:8,color:"#686868",letterSpacing:3}}>AVERAGE SHAPE</div>
                 <SpiderChart data={spiderData} maxVal={spiderMax} size={200}/>
-                <div style={{fontSize:8,color:"#383838",letterSpacing:1}}>outer ring = {Math.round(spiderMax)}</div>
+                <div style={{fontSize:8,color:"#686868",letterSpacing:1}}>outer ring = 200</div>
               </div>
 
               {/* Radar stats table */}
-              <div style={{flex:1,minWidth:300,background:"#0b0b0b",border:"1px solid #1a1a1a",borderRadius:8,padding:"16px"}}>
-                <div style={{fontSize:8,color:"#383838",letterSpacing:3,marginBottom:14}}>RADAR STATISTICS</div>
+              <div style={{flex:1,minWidth:300,background:"#0b0b0b",border:"1px solid #252525",borderRadius:8,padding:"16px"}}>
+                <div style={{fontSize:8,color:"#686868",letterSpacing:3,marginBottom:14}}>RADAR STATISTICS</div>
                 <div style={{display:"grid",gridTemplateColumns:"64px 1fr 82px 64px 72px",gap:"7px 10px",alignItems:"center"}}>
                   {["AXIS","","MEAN ± STD","MEDIAN","RANGE"].map((h,i)=>(
-                    <div key={i} style={{fontSize:7.5,color:"#333",letterSpacing:2}}>{h}</div>
+                    <div key={i} style={{fontSize:7.5,color:"#666",letterSpacing:2}}>{h}</div>
                   ))}
                   {[...RADAR_KEYS,"total"].map(k=>{
                     const s=stats[k]; if(!s) return null;
@@ -602,11 +629,11 @@ function StatsTab({songs, allCards}) {
                         <div style={{height:4,background:"#0d0d0d",borderRadius:2,overflow:"hidden"}}>
                           <div style={{height:"100%",width:`${pct}%`,background:c,borderRadius:2,boxShadow:`0 0 5px ${c}55`}}/>
                         </div>
-                        <div style={{fontSize:9.5,color:"#888",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>
-                          {fmt(s.mean,1)} <span style={{color:"#3a3a3a"}}>±{fmt(s.std,1)}</span>
+                        <div style={{fontSize:9.5,color:"#999",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>
+                          {fmt(s.mean,1)} <span style={{color:"#666"}}>±{fmt(s.std,1)}</span>
                         </div>
-                        <div style={{fontSize:9.5,color:"#585858",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(s.median,1)}</div>
-                        <div style={{fontSize:9,color:"#404040",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(s.min,0)}–{fmt(s.max,0)}</div>
+                        <div style={{fontSize:9.5,color:"#777",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(s.median,1)}</div>
+                        <div style={{fontSize:9,color:"#686868",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(s.min,0)}–{fmt(s.max,0)}</div>
                       </React.Fragment>
                     );
                   })}
@@ -615,8 +642,8 @@ function StatsTab({songs, allCards}) {
 
               {/* Diff breakdown */}
               {Object.keys(stats._diff).length>1&&(
-                <div style={{background:"#0b0b0b",border:"1px solid #1a1a1a",borderRadius:8,padding:"16px",minWidth:170}}>
-                  <div style={{fontSize:8,color:"#383838",letterSpacing:3,marginBottom:14}}>DIFF BREAKDOWN</div>
+                <div style={{background:"#0b0b0b",border:"1px solid #252525",borderRadius:8,padding:"16px",minWidth:170}}>
+                  <div style={{fontSize:8,color:"#686868",letterSpacing:3,marginBottom:14}}>DIFF BREAKDOWN</div>
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
                     {Object.entries(stats._diff).sort((a,b)=>b[1]-a[1]).map(([type,count])=>{
                       const pct=(count/selected.length)*100, c=DIFF_COLORS[type]||"#555";
@@ -626,7 +653,7 @@ function StatsTab({songs, allCards}) {
                           <div style={{flex:1,height:4,background:"#0d0d0d",borderRadius:2,overflow:"hidden"}}>
                             <div style={{height:"100%",width:`${pct}%`,background:c,borderRadius:2}}/>
                           </div>
-                          <div style={{width:36,fontSize:9,color:"#585858",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(pct,1)}%</div>
+                          <div style={{width:36,fontSize:9,color:"#777",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(pct,1)}%</div>
                         </div>
                       );
                     })}
@@ -679,11 +706,11 @@ function EstimatorTab({allCards, maxSingle}) {
 
   return (
     <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-      <aside style={{width:240,flexShrink:0,background:"#090909",borderRight:"1px solid #181818",
+      <aside style={{width:240,flexShrink:0,background:"#090909",borderRight:"1px solid #252525",
         overflowY:"auto",padding:"16px 12px",display:"flex",flexDirection:"column",gap:16}}>
         <div>
           <div style={{fontSize:10.5,color:"#00d5ca",letterSpacing:4,fontWeight:700,marginBottom:6}}>ESTIMATOR</div>
-          <div style={{fontSize:8.5,color:"#3e3e3e",letterSpacing:0.5,lineHeight:1.8}}>
+          <div style={{fontSize:8.5,color:"#686868",letterSpacing:0.5,lineHeight:1.8}}>
             Enter radar values you know.<br/>Leave blank to ignore that<br/>axis in the search.
           </div>
         </div>
@@ -695,14 +722,14 @@ function EstimatorTab({allCards, maxSingle}) {
               const filled=inputs[k].trim()!=="", c=RADAR_COLORS[k];
               return (
                 <div key={k} style={{display:"flex",alignItems:"center",gap:7}}>
-                  <div style={{width:58,fontSize:8.5,color:filled?c:"#4e4e4e",letterSpacing:1,
+                  <div style={{width:58,fontSize:8.5,color:filled?c:"#686868",letterSpacing:1,
                     textTransform:"uppercase",fontWeight:700,flexShrink:0}}>{k}</div>
                   <input type="number" placeholder="—" value={inputs[k]}
                     onChange={e=>setInputs(p=>({...p,[k]:e.target.value}))}
                     style={{flex:1,padding:"5px 7px",
                       background:filled?c+"10":"#0d0d0d",
-                      border:`1px solid ${filled?c+"50":"#242424"}`,
-                      borderRadius:3,color:filled?c:"#3e3e3e",
+                      border:`1px solid ${filled?c+"50":"#333"}`,
+                      borderRadius:3,color:filled?c:"#686868",
                       fontFamily:"inherit",fontSize:12,outline:"none",
                       fontVariantNumeric:"tabular-nums",transition:"all 0.12s"}}/>
                 </div>
@@ -710,7 +737,7 @@ function EstimatorTab({allCards, maxSingle}) {
             })}
           </div>
           {filledKeys.length>0&&(
-            <div style={{fontSize:8,color:"#3a3a3a",letterSpacing:1,marginTop:6}}>
+            <div style={{fontSize:8,color:"#686868",letterSpacing:1,marginTop:6}}>
               {filledKeys.length} axis{filledKeys.length!==1?"es":""} active
             </div>
           )}
@@ -728,8 +755,8 @@ function EstimatorTab({allCards, maxSingle}) {
         <button onClick={handleCalc} disabled={filledKeys.length===0} style={{
           padding:"10px",
           background:filledKeys.length>0?"#00d5ca14":"transparent",
-          border:`1px solid ${filledKeys.length>0?"#00d5ca44":"#222"}`,
-          color:filledKeys.length>0?"#00d5ca":"#2e2e2e",
+          border:`1px solid ${filledKeys.length>0?"#00d5ca44":"#333"}`,
+          color:filledKeys.length>0?"#00d5ca":"#505050",
           borderRadius:4,cursor:filledKeys.length>0?"pointer":"default",
           fontFamily:"inherit",fontSize:11,letterSpacing:2.5,fontWeight:700,
           boxShadow:filledKeys.length>0?"0 0 16px #00d5ca18":"none",transition:"all 0.13s",
@@ -737,7 +764,7 @@ function EstimatorTab({allCards, maxSingle}) {
 
         {results&&(
           <button onClick={()=>{setInputs(Object.fromEntries(RADAR_KEYS.map(k=>[k,""])));setResults(null);}} style={{
-            padding:"6px",background:"transparent",border:"1px solid #202020",color:"#3c3c3c",
+            padding:"6px",background:"transparent",border:"1px solid #333",color:"#767676",
             borderRadius:3,cursor:"pointer",fontFamily:"inherit",fontSize:9,letterSpacing:1,
           }}>CLEAR</button>
         )}
@@ -746,10 +773,10 @@ function EstimatorTab({allCards, maxSingle}) {
       <main style={{flex:1,overflowY:"auto",padding:16}}>
         {!results ? (
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-            height:"100%",gap:12,color:"#242424"}}>
+            height:"100%",gap:12,color:"#505050"}}>
             <div style={{fontSize:36}}>◈</div>
             <div style={{fontSize:11,letterSpacing:6}}>ENTER VALUES TO ESTIMATE</div>
-            <div style={{fontSize:8.5,color:"#2e2e2e",letterSpacing:1.5,textAlign:"center",lineHeight:1.9,marginTop:4}}>
+            <div style={{fontSize:8.5,color:"#5a5a5a",letterSpacing:1.5,textAlign:"center",lineHeight:1.9,marginTop:4}}>
               Fill in radar values you know.<br/>Leave axes blank to search using<br/>only the filled fields.
             </div>
           </div>
@@ -759,50 +786,57 @@ function EstimatorTab({allCards, maxSingle}) {
               {[
                 {label:"EST. LEVEL",val:fmt(results.levelStats.median,2),c:"#00d5ca",glow:true},
                 {label:"MEAN LEVEL",val:fmt(results.levelStats.mean,2),c:"#aaaaaa"},
-                {label:"STD DEV",   val:"±"+fmt(results.levelStats.std,2),c:"#585858"},
-                {label:"RANGE",     val:`${fmt(results.levelStats.min,1)}–${fmt(results.levelStats.max,1)}`,c:"#484848"},
+                {label:"STD DEV",   val:"±"+fmt(results.levelStats.std,2),c:"#686868"},
+                {label:"RANGE",     val:`${fmt(results.levelStats.min,1)}–${fmt(results.levelStats.max,1)}`,c:"#686868"},
               ].map(({label,val,c,glow})=>(
-                <div key={label} style={{background:"#0c0c0c",border:`1px solid ${glow?"#00d5ca22":"#1a1a1a"}`,
+                <div key={label} style={{background:"#0c0c0c",border:`1px solid ${glow?"#00d5ca22":"#252525"}`,
                   borderRadius:6,padding:"12px 16px",boxShadow:glow?"0 0 20px #00d5ca10":"none"}}>
                   <div style={{fontSize:22,fontWeight:800,color:c,letterSpacing:-0.5,textShadow:glow?"0 0 20px #00d5ca66":"none"}}>{val}</div>
-                  <div style={{fontSize:8,color:"#383838",letterSpacing:2,marginTop:3}}>{label}</div>
+                  <div style={{fontSize:8,color:"#686868",letterSpacing:2,marginTop:3}}>{label}</div>
                 </div>
               ))}
             </div>
 
             <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-start"}}>
-              <div style={{background:"#0b0b0b",border:"1px solid #1a1a1a",borderRadius:8,padding:"16px",
+              {/* Spider: nearest-avg (cyan) vs your input (white) */}
+              <div style={{background:"#0b0b0b",border:"1px solid #252525",borderRadius:8,padding:"16px",
                 display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                <div style={{fontSize:8,color:"#383838",letterSpacing:3}}>AVG OF NEAREST K vs INPUT</div>
-                <SpiderChart data={results.radarAvg} compareData={inputSpider} maxVal={maxSingle} size={200}/>
-                <div style={{display:"flex",gap:14,fontSize:8,color:"#3c3c3c"}}>
-                  <span style={{color:"#00d5ca66"}}>— nearest avg</span>
-                  <span style={{color:"#ffffff33"}}>— your input</span>
+                <div style={{fontSize:8,color:"#686868",letterSpacing:3}}>AVG OF NEAREST K vs INPUT</div>
+                <SpiderChart
+                  data={results.radarAvg}
+                  compareData={inputSpider}
+                  maxVal={maxSingle}
+                  size={200}
+                  compareColor="#ffffff"
+                />
+                <div style={{display:"flex",gap:14,fontSize:8}}>
+                  <span style={{color:"#00d5ca88"}}>— nearest avg</span>
+                  <span style={{color:"#ffffffbb"}}>— your input</span>
                 </div>
               </div>
 
-              <div style={{background:"#0b0b0b",border:"1px solid #1a1a1a",borderRadius:8,padding:"16px",flex:1,minWidth:200}}>
-                <div style={{fontSize:8,color:"#383838",letterSpacing:3,marginBottom:14}}>LEVEL DISTRIBUTION</div>
+              <div style={{background:"#0b0b0b",border:"1px solid #252525",borderRadius:8,padding:"16px",flex:1,minWidth:200}}>
+                <div style={{fontSize:8,color:"#686868",letterSpacing:3,marginBottom:14}}>LEVEL DISTRIBUTION</div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {Object.entries(results.levelDist).sort((a,b)=>parseFloat(b[0])-parseFloat(a[0])).map(([lvl,count])=>{
                     const pct=(count/results.topK.length)*100, dom=pct>20;
                     return (
                       <div key={lvl} style={{display:"flex",alignItems:"center",gap:8}}>
-                        <div style={{width:36,fontSize:10,color:dom?"#cccccc":"#585858",textAlign:"right",
+                        <div style={{width:36,fontSize:10,color:dom?"#cccccc":"#686868",textAlign:"right",
                           fontVariantNumeric:"tabular-nums",fontWeight:dom?700:400}}>{lvl}</div>
                         <div style={{flex:1,height:6,background:"#0d0d0d",borderRadius:3,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${pct}%`,background:dom?"#00d5ca":"#1e1e1e",
+                          <div style={{height:"100%",width:`${pct}%`,background:dom?"#00d5ca":"#272727",
                             borderRadius:3,boxShadow:dom?"0 0 8px #00d5ca44":"none"}}/>
                         </div>
-                        <div style={{width:26,fontSize:9,color:"#484848",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{count}</div>
+                        <div style={{width:26,fontSize:9,color:"#686868",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{count}</div>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div style={{background:"#0b0b0b",border:"1px solid #1a1a1a",borderRadius:8,padding:"16px",minWidth:160}}>
-                <div style={{fontSize:8,color:"#383838",letterSpacing:3,marginBottom:14}}>DIFFICULTY</div>
+              <div style={{background:"#0b0b0b",border:"1px solid #252525",borderRadius:8,padding:"16px",minWidth:160}}>
+                <div style={{fontSize:8,color:"#686868",letterSpacing:3,marginBottom:14}}>DIFFICULTY</div>
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {Object.entries(results.diffDist).sort((a,b)=>b[1]-a[1]).map(([type,count])=>{
                     const pct=(count/results.topK.length)*100, c=DIFF_COLORS[type]||"#555";
@@ -812,7 +846,7 @@ function EstimatorTab({allCards, maxSingle}) {
                         <div style={{flex:1,height:5,background:"#0d0d0d",borderRadius:2,overflow:"hidden"}}>
                           <div style={{height:"100%",width:`${pct}%`,background:c,borderRadius:2}}/>
                         </div>
-                        <div style={{width:34,fontSize:9,color:"#585858",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(pct,1)}%</div>
+                        <div style={{width:34,fontSize:9,color:"#777",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{fmt(pct,1)}%</div>
                       </div>
                     );
                   })}
@@ -820,15 +854,15 @@ function EstimatorTab({allCards, maxSingle}) {
               </div>
             </div>
 
-            <div style={{background:"#0b0b0b",border:"1px solid #1a1a1a",borderRadius:8,padding:"16px"}}>
-              <div style={{fontSize:8,color:"#383838",letterSpacing:3,marginBottom:12}}>TOP {results.topK.length} NEAREST MATCHES</div>
+            <div style={{background:"#0b0b0b",border:"1px solid #252525",borderRadius:8,padding:"16px"}}>
+              <div style={{fontSize:8,color:"#686868",letterSpacing:3,marginBottom:12}}>TOP {results.topK.length} NEAREST MATCHES</div>
               <div style={{overflowX:"auto"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",minWidth:600}}>
                   <thead>
                     <tr>
                       {["#","TITLE","ARTIST","DIFF","LVL",...RADAR_KEYS.map(k=>k.slice(0,4).toUpperCase()),"DIST"].map(h=>(
-                        <th key={h} style={{fontSize:7.5,color:"#333",letterSpacing:1.5,fontWeight:700,
-                          textAlign:"left",paddingBottom:6,borderBottom:"1px solid #181818",paddingRight:10}}>{h}</th>
+                        <th key={h} style={{fontSize:7.5,color:"#666",letterSpacing:1.5,fontWeight:700,
+                          textAlign:"left",paddingBottom:6,borderBottom:"1px solid #252525",paddingRight:10}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -837,17 +871,17 @@ function EstimatorTab({allCards, maxSingle}) {
                       const t=diff.type.toLowerCase(), dc=DIFF_COLORS[t]||"#555";
                       return (
                         <tr key={`${song.songid}-${diff.type}-${i}`} style={{background:i%2===0?"transparent":"#0a0a0a"}}>
-                          <td style={{fontSize:8.5,color:"#333",padding:"5px 10px 5px 0"}}>{i+1}</td>
+                          <td style={{fontSize:8.5,color:"#666",padding:"5px 10px 5px 0"}}>{i+1}</td>
                           <td style={{fontSize:11,color:"#aaa",padding:"5px 10px 5px 0",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{song.title}</td>
-                          <td style={{fontSize:9,color:"#484848",padding:"5px 10px 5px 0",maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{song.artist}</td>
+                          <td style={{fontSize:9,color:"#686868",padding:"5px 10px 5px 0",maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{song.artist}</td>
                           <td style={{fontSize:8.5,color:dc,fontWeight:700,letterSpacing:1,padding:"5px 10px 5px 0"}}>{DIFF_ABBR[t]||t.toUpperCase()}</td>
                           <td style={{fontSize:12,fontWeight:700,color:"#ccc",padding:"5px 10px 5px 0"}}>{diff.level}</td>
                           {RADAR_KEYS.map(k=>(
-                            <td key={k} style={{fontSize:9,color:"#484848",fontVariantNumeric:"tabular-nums",padding:"5px 10px 5px 0"}}>
+                            <td key={k} style={{fontSize:9,color:"#686868",fontVariantNumeric:"tabular-nums",padding:"5px 10px 5px 0"}}>
                               {Number(diff.radar?.[k])||0}
                             </td>
                           ))}
-                          <td style={{fontSize:9,color:"#333",fontVariantNumeric:"tabular-nums",padding:"5px 0"}}>{fmt(dist*100,2)}</td>
+                          <td style={{fontSize:9,color:"#666",fontVariantNumeric:"tabular-nums",padding:"5px 0"}}>{fmt(dist*100,2)}</td>
                         </tr>
                       );
                     })}
@@ -887,17 +921,17 @@ function App() {
       color:"#ccc",fontFamily:"'JetBrains Mono','Courier New',monospace",overflow:"hidden"}}>
 
       <header style={{display:"flex",alignItems:"stretch",height:46,background:"#090909",
-        borderBottom:"1px solid #181818",flexShrink:0}}>
-        <div style={{padding:"0 18px",display:"flex",alignItems:"center",borderRight:"1px solid #181818",flexShrink:0}}>
+        borderBottom:"1px solid #252525",flexShrink:0}}>
+        <div style={{padding:"0 18px",display:"flex",alignItems:"center",borderRight:"1px solid #252525",flexShrink:0}}>
           <span style={{fontWeight:800,fontSize:13,letterSpacing:6,color:"#00d5ca",textShadow:"0 0 22px #00d5ca55"}}>SDVX</span>
-          <span style={{fontWeight:300,fontSize:13,letterSpacing:5,color:"#3e3e3e",marginLeft:1}}>·RADAR</span>
+          <span style={{fontWeight:300,fontSize:13,letterSpacing:5,color:"#686868",marginLeft:1}}>·RADAR</span>
         </div>
         <div style={{display:"flex",height:"100%",marginLeft:2}}>
           {TABS.map(tab=>(
             <button key={tab.id} onClick={()=>setActiveTab(tab.id)} style={{
               padding:"0 18px",height:"100%",background:"transparent",border:"none",
               borderBottom:`2px solid ${activeTab===tab.id?"#00d5ca":"transparent"}`,
-              color:activeTab===tab.id?"#00d5ca":"#3e3e3e",
+              color:activeTab===tab.id?"#00d5ca":"#686868",
               cursor:"pointer",fontFamily:"inherit",fontSize:9.5,letterSpacing:3,fontWeight:700,
               transition:"all 0.12s",textShadow:activeTab===tab.id?"0 0 12px #00d5ca55":"none",
             }}>{tab.label}</button>
@@ -905,9 +939,9 @@ function App() {
         </div>
         {!loading&&!error&&(
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",padding:"0 18px",gap:8}}>
-            <span style={{fontSize:8.5,color:"#333",letterSpacing:2}}>{songs.length.toLocaleString()} SONGS</span>
-            <div style={{width:1,height:12,background:"#222"}}/>
-            <span style={{fontSize:8.5,color:"#333",letterSpacing:2}}>{allCards.length.toLocaleString()} CHARTS</span>
+            <span style={{fontSize:8.5,color:"#686868",letterSpacing:2}}>{songs.length.toLocaleString()} SONGS</span>
+            <div style={{width:1,height:12,background:"#3a3a3a"}}/>
+            <span style={{fontSize:8.5,color:"#686868",letterSpacing:2}}>{allCards.length.toLocaleString()} CHARTS</span>
           </div>
         )}
       </header>
@@ -915,14 +949,14 @@ function App() {
       {loading ? (
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:18}}>
           <div className="spinner" style={{width:28,height:28,border:"2px solid #1e1e1e",borderTopColor:"#00d5ca",borderRadius:"50%"}}/>
-          <div className="pulse" style={{fontSize:9.5,color:"#3a3a3a",letterSpacing:5}}>LOADING SONGSV1.3.3.JSON</div>
+          <div className="pulse" style={{fontSize:9.5,color:"#686868",letterSpacing:5}}>LOADING SONGSV1.3.3.JSON</div>
         </div>
       ) : error ? (
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
-          <div style={{fontSize:28,color:"#2e2e2e"}}>◈</div>
+          <div style={{fontSize:28,color:"#505050"}}>◈</div>
           <div style={{fontSize:11,color:"#f5003c",letterSpacing:3}}>LOAD ERROR</div>
-          <div style={{fontSize:9,color:"#4a4a4a",letterSpacing:1,maxWidth:360,textAlign:"center",lineHeight:1.9}}>{error}</div>
-          <div style={{fontSize:8.5,color:"#333",letterSpacing:1,marginTop:4}}>Ensure songsv1.3.3.json is in the same directory as index.html.</div>
+          <div style={{fontSize:9,color:"#686868",letterSpacing:1,maxWidth:360,textAlign:"center",lineHeight:1.9}}>{error}</div>
+          <div style={{fontSize:8.5,color:"#666",letterSpacing:1,marginTop:4}}>Ensure songsv1.3.3.json is in the same directory as index.html.</div>
         </div>
       ) : (
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
