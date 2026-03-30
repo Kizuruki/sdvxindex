@@ -58,7 +58,7 @@ const DIFF_URL_NUM = {
   vivid:"4v", exceed:"4x", ultimate:"6",
 };
 const ALL_DIFF_TYPES = Object.keys(DIFF_COLORS);
-const ALL_SORT_CATS  = [...RADAR_KEYS, "total", "chain", "exscore"];
+const ALL_SORT_CATS  = [...RADAR_KEYS, "total", "chain", "exscore", "level"];
 const PAGE_SIZE = 100;
 const DECIMAL_LEVEL_RANGE = [17, 18, 19, 20];
 
@@ -115,12 +115,14 @@ function getSortVal({diff, total}, cat) {
   if (cat==="total")   return total;
   if (cat==="chain")   return Number(diff.max_chain)||0;
   if (cat==="exscore") return Number(diff.max_exscore)||0;
+  if (cat==="level")   return parseFloat(diff.level)||0;
   return Number(diff.radar?.[cat])||0;
 }
 
 function sortColor(cat) {
   if (cat==="chain")   return "#00d5ca";
   if (cat==="exscore") return "#f9ff00";
+  if (cat==="level")   return "#aaaaaa";
   return RADAR_COLORS[cat] || "#ffffff";
 }
 
@@ -428,7 +430,7 @@ function ExplorerTab({songs, allCards, maxSingle}) {
                 borderRadius:3,color:active?c:"#686868",cursor:"pointer",fontFamily:"inherit",
                 fontSize:10,textAlign:"left",letterSpacing:1.5,textTransform:"uppercase",
                 fontWeight:active?700:400,transition:"all 0.1s",boxShadow:active?`0 0 8px ${c}18`:"none",
-              }}>{cat==="chain"?"⛓ CHAIN":cat==="exscore"?"EX SCORE":cat}</button>;
+              }}>{cat==="chain"?"⛓ CHAIN":cat==="exscore"?"EX SCORE":cat==="level"?"LEVEL":cat}</button>;
             })}
           </div>
           <div style={{display:"flex",gap:4,marginTop:7}}>
@@ -671,9 +673,19 @@ function StatsTab({songs, allCards}) {
 // ─── Estimator Tab ────────────────────────────────────────────────────────────
 
 function EstimatorTab({allCards, maxSingle}) {
-  const [inputs,   setInputs]   = useState(()=>Object.fromEntries(RADAR_KEYS.map(k=>[k,""])));
-  const [kCount,   setKCount]   = useState(30);
-  const [results,  setResults]  = useState(null);
+  const [inputs,    setInputs]   = useState(()=>Object.fromEntries(RADAR_KEYS.map(k=>[k,""])));
+  const [kCount,    setKCount]   = useState(30);
+  const [results,   setResults]  = useState(null);
+  const [tblSortKey, setTblSortKey] = useState("dist");
+  const [tblSortDir, setTblSortDir] = useState("asc");
+
+  const handleTblSort = (key) => {
+    setTblSortKey(prev => {
+      if (prev === key) { setTblSortDir(d => d === "asc" ? "desc" : "asc"); return key; }
+      setTblSortDir(key === "dist" ? "asc" : "desc");
+      return key;
+    });
+  };
   const [tableSort, setTableSort] = useState("dist"); // "dist" | "level_desc" | "level_asc"
 
   const filledKeys = useMemo(()=>RADAR_KEYS.filter(k=>inputs[k].trim()!==""),[inputs]);
@@ -864,29 +876,33 @@ function EstimatorTab({allCards, maxSingle}) {
                 <table style={{width:"100%",borderCollapse:"collapse",minWidth:600}}>
                   <thead>
                     <tr>
-                      {["#","TITLE","ARTIST","DIFF","LVL",...RADAR_KEYS.map(k=>k.slice(0,4).toUpperCase()),"DIST"].map(h=>{
-                        const isLvl = h==="LVL", isDist = h==="DIST";
-                        const sortable = isLvl || isDist;
-                        const active = (isLvl && tableSort!=="dist") || (isDist && tableSort==="dist");
-                        return (
-                          <th key={h} onClick={sortable?()=>{
-                            if(isLvl) setTableSort(s=>s==="level_desc"?"level_asc":"level_desc");
-                            if(isDist) setTableSort("dist");
-                          }:undefined} style={{fontSize:7.5,letterSpacing:1.5,fontWeight:700,
-                            textAlign:"left",paddingBottom:6,borderBottom:"1px solid #252525",paddingRight:10,
-                            color: active?"#00d5ca":"#666",
-                            cursor:sortable?"pointer":"default",userSelect:"none"}}>
-                            {h}{isLvl&&tableSort!=="dist"?(tableSort==="level_desc"?" ▼":" ▲"):""}{isDist&&tableSort==="dist"?" ▼":""}
-                          </th>
-                        );
-                      })}
+                      {(()=>{
+                        const SORT_MAP = {"LVL":"level","DIST":"dist",
+                          ...Object.fromEntries(RADAR_KEYS.map(k=>[k.slice(0,4).toUpperCase(),k]))};
+                        return ["#","TITLE","ARTIST","DIFF","LVL",...RADAR_KEYS.map(k=>k.slice(0,4).toUpperCase()),"DIST"].map(h=>{
+                          const sk = SORT_MAP[h];
+                          const active = sk && tblSortKey===sk;
+                          const arrow = active ? (tblSortDir==="asc"?" ▲":" ▼") : "";
+                          return (
+                            <th key={h} onClick={sk?()=>handleTblSort(sk):undefined}
+                              style={{fontSize:7.5,letterSpacing:1.5,fontWeight:700,textAlign:"left",
+                                paddingBottom:6,borderBottom:"1px solid #252525",paddingRight:10,
+                                color:active?"#00d5ca":"#666",
+                                cursor:sk?"pointer":"default",userSelect:"none",whiteSpace:"nowrap"}}>
+                              {h}{arrow}
+                            </th>
+                          );
+                        });
+                      })()}
                     </tr>
                   </thead>
                   <tbody>
                     {[...results.topK].sort((a,b)=>{
-                      if(tableSort==="level_desc") return parseFloat(b.diff.level)-parseFloat(a.diff.level);
-                      if(tableSort==="level_asc")  return parseFloat(a.diff.level)-parseFloat(b.diff.level);
-                      return a.dist-b.dist;
+                      let av, bv;
+                      if(tblSortKey==="dist")  { av=a.dist; bv=b.dist; }
+                      else if(tblSortKey==="level") { av=parseFloat(a.diff.level); bv=parseFloat(b.diff.level); }
+                      else { av=Number(a.diff.radar?.[tblSortKey])||0; bv=Number(b.diff.radar?.[tblSortKey])||0; }
+                      return tblSortDir==="asc" ? av-bv : bv-av;
                     }).map(({song,diff,dist},i)=>{
                       const t=diff.type.toLowerCase(), dc=DIFF_COLORS[t]||"#555";
                       return (
