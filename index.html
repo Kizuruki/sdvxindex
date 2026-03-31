@@ -673,11 +673,17 @@ function StatsTab({songs, allCards}) {
 // ─── Estimator Tab ────────────────────────────────────────────────────────────
 
 function EstimatorTab({allCards, maxSingle}) {
-  const [inputs,    setInputs]   = useState(()=>Object.fromEntries(RADAR_KEYS.map(k=>[k,""])));
-  const [kCount,    setKCount]   = useState(30);
-  const [results,   setResults]  = useState(null);
+  const [inputs,     setInputs]     = useState(()=>Object.fromEntries(RADAR_KEYS.map(k=>[k,""])));
+  const [kCount,     setKCount]     = useState(30);
+  const [results,    setResults]    = useState(null);
   const [tblSortKey, setTblSortKey] = useState("dist");
   const [tblSortDir, setTblSortDir] = useState("asc");
+  const [diffFilter, setDiffFilter] = useState(null);
+
+  const RARE_DIFFS     = ["gravity","heavenly","exceed","infinite","ultimate","vivid"];
+  const RARE_FALLBACK  = [...RARE_DIFFS, "maximum"];
+  const HARD_CUTOFF_DIFFS = ["novice","advanced","exhaust"];
+  const DIST_CUTOFF    = 0.10;
 
   const handleTblSort = (key) => {
     setTblSortKey(prev => {
@@ -702,10 +708,28 @@ function EstimatorTab({allCards, maxSingle}) {
       return {...card,dist:Math.sqrt(sumSq/filledKeys.length)};
     });
     withDist.sort((a,b)=>a.dist-b.dist);
-    const hardSlice = withDist.slice(0, kCount);
-    const cutoffDist = hardSlice.length ? hardSlice[hardSlice.length-1].dist : 0;
-    // Include all charts tied with the last chart in the hard slice
-    const topK = withDist.filter(c => c.dist <= cutoffDist + 1e-9);
+
+    let topK;
+    if(!diffFilter) {
+      const hardSlice = withDist.slice(0,kCount);
+      const cutoffDist = hardSlice.length ? hardSlice[hardSlice.length-1].dist : 0;
+      topK = withDist.filter(c=>c.dist<=cutoffDist+1e-9);
+    } else if(HARD_CUTOFF_DIFFS.includes(diffFilter)) {
+      topK = withDist.filter(c=>c.diff.type.toLowerCase()===diffFilter && c.dist<=DIST_CUTOFF);
+    } else {
+      const exactMatches = withDist.filter(c=>c.diff.type.toLowerCase()===diffFilter && c.dist<=DIST_CUTOFF);
+      if(exactMatches.length>=kCount) {
+        const hardSlice = exactMatches.slice(0,kCount);
+        const cutoffDist = hardSlice[hardSlice.length-1].dist;
+        topK = exactMatches.filter(c=>c.dist<=cutoffDist+1e-9);
+      } else {
+        const fallbackPool = withDist.filter(c=>RARE_FALLBACK.includes(c.diff.type.toLowerCase()));
+        const hardSlice = fallbackPool.slice(0,kCount);
+        const cutoffDist = hardSlice.length ? hardSlice[hardSlice.length-1].dist : 0;
+        topK = fallbackPool.filter(c=>c.dist<=cutoffDist+1e-9);
+      }
+    }
+
     const levels=topK.map(c=>parseFloat(c.diff.level));
     const levelDist={};
     levels.forEach(l=>{const key=String(l);levelDist[key]=(levelDist[key]||0)+1;});
@@ -716,7 +740,7 @@ function EstimatorTab({allCards, maxSingle}) {
     setResults({topK,
       levelStats:{mean:mean(levels),std:stdDev(levels),median:median(levels),min:Math.min(...levels),max:Math.max(...levels)},
       levelDist,diffDist,radarAvg});
-  },[allCards,inputs,filledKeys,kCount,maxSingle]);
+  },[allCards,inputs,filledKeys,kCount,maxSingle,diffFilter]);
 
   const inputSpider = useMemo(()=>Object.fromEntries(RADAR_KEYS.map(k=>[k,parseFloat(inputs[k])||0])),[inputs]);
 
@@ -758,7 +782,41 @@ function EstimatorTab({allCards, maxSingle}) {
             </div>
           )}
         </div>
-
+        <div>
+          <SectionLabel>DIFFICULTY FILTER</SectionLabel>
+          <div style={{display:"flex",flexDirection:"column",gap:3}}>
+            {[null,...ALL_DIFF_TYPES].map(t=>{
+              const active = diffFilter===t;
+              const c = t ? (DIFF_COLORS[t]||"#555") : "#555";
+              const label = t ? `${DIFF_ABBR[t]||t.toUpperCase()}  ${t}` : "ALL";
+              const isRare = t && RARE_DIFFS.includes(t);
+              return (
+                <button key={t||"all"} onClick={()=>setDiffFilter(t)} style={{
+                  padding:"4px 10px",fontSize:10.5,
+                  background:active?c+"1e":"transparent",
+                  border:`1px solid ${active?c+"66":"#333"}`,
+                  color:active?c:"#767676",
+                  borderRadius:3,cursor:"pointer",fontFamily:"inherit",
+                  letterSpacing:0.5,textAlign:"left",transition:"all 0.1s",
+                  whiteSpace:"nowrap",boxShadow:active?`0 0 8px ${c}18`:"none",
+                }}>
+                  {label}
+                  {isRare&&<span style={{fontSize:7,color:active?c+"99":"#444",marginLeft:6}}>+fallback</span>}
+                </button>
+              );
+            })}
+          </div>
+          {diffFilter&&RARE_DIFFS.includes(diffFilter)&&(
+            <div style={{fontSize:7.5,color:"#555",marginTop:5,lineHeight:1.8}}>
+              Falls back to rare+MXM pool<br/>if fewer than {kCount} matches within dist 10.
+            </div>
+          )}
+          {diffFilter&&HARD_CUTOFF_DIFFS.includes(diffFilter)&&(
+            <div style={{fontSize:7.5,color:"#555",marginTop:5,lineHeight:1.8}}>
+              Hard cutoff at dist 10.<br/>No fallback for NOV/ADV/EXH.
+            </div>
+          )}
+        </div>
         <div>
           <SectionLabel>NEAREST K</SectionLabel>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
